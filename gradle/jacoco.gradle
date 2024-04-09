@@ -1,0 +1,57 @@
+ext {
+    jacocoVersion = "0.8.8"
+}
+
+jacoco {
+    toolVersion = "${jacocoVersion}"
+    reportsDirectory = layout.buildDirectory.dir('${buildDir}/reports/jacoco')
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.0
+            }
+        }
+
+        rule {
+            enabled = false
+            element = 'CLASS'
+            includes = ['com.fleet.*']
+
+            limit {
+                counter = 'LINE'
+                value = 'TOTALCOUNT'
+                maximum = 0.3
+            }
+        }
+    }
+}
+
+jacocoTestReport {
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/test.exec")
+    reports {
+        html.required = true
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+    dependsOn test
+}
+
+test {
+    finalizedBy jacocoTestReport
+
+    jacoco {
+        destinationFile = layout.buildDirectory.file('jacoco/jacocoTest.exec').get().asFile
+        classDumpDir = layout.buildDirectory.dir('jacoco/classpathdumps').get().asFile
+    }
+}
+
+tasks.register('frameworkSecurityCodeCoverageReport', JacocoReport) {
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/${name}.exec")
+    sourceSets sourceSets.main
+}
+
+tasks.build.dependsOn([jacocoTestReport, frameworkSecurityCodeCoverageReport, jacocoTestCoverageVerification])
